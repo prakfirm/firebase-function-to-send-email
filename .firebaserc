@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "dnc-site",
+    "prod-firebase-function-to-send-email": "dnc-site"
+  }
+}
