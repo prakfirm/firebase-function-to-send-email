@@ -87,3 +87,82 @@ exports.httpEmail = functions.https.onRequest((req, res) => {
 	})
   
 })
+
+exports.fcmNotification = functions.https.onRequest((req, res) => {
+	cors(req, res, () => {
+		return Promise.resolve()
+			.then(() => {
+				if (req.method !== 'POST') {
+					var errorResponse = {
+						message: 'Only POST requests are accepted'
+					}
+					res.json(errorResponse);
+					res.status(405).send();
+				}
+				if (!req.headers.siteid) {
+					var errorResponse = {
+						message: 'SiteID header parameter is missing',
+						siteid: req.headers.siteid
+					}
+					res.json(errorResponse);
+					res.status(400).send();
+				}
+				const documentId = req.headers.siteid;
+				const devicekey = req.headers.devicekey;
+				// Notification details.
+				const payload = {
+					notification: {
+						title: req.body.title,
+						body: req.body.body,
+						icon: req.body.icon,
+					}
+				};
+				if (devicekey) {
+					// Send notifications to devicekey.
+					return admin.messaging().sendToDevice(devicekey, payload)
+							.then(response => {
+								console.log('Success', response);
+								res.status(200);
+							})
+							.catch (error => {
+								console.error('Error', error);
+							});
+				} else {
+					// Send notification to all for given documentId
+					return admin.firestore().collection('SitesFCMTokens')
+											.doc(documentId)
+											.collection('FCMTokens')
+											.get()
+											.then(querySnapshot => {
+												const fcmTokens = []
+												// add data from the 5 most recent comments to the array
+												querySnapshot.forEach(doc => {
+													fcmTokens.push( doc.data().fcmToken )
+												});
+
+												return admin.messaging().sendToDevice(fcmTokens.toString(), payload)
+																		.then(response => {
+																			console.log('Success', response);
+																			res.status(200);
+																		})
+																		.catch (error => {
+																			console.error('Error', error);
+																		});
+												
+											})
+											.catch(reason => {
+												res.json(reason);
+												res.status(200).send();
+											});
+				}
+			})
+			.then((response) => {
+				res.end();
+			})
+			.catch((err) => {
+				console.error(err);
+				return Promise.reject(err);
+			});	
+	})
+  
+})
