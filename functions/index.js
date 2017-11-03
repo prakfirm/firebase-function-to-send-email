@@ -78,12 +78,12 @@ exports.httpEmail = functions.https.onRequest((req, res) => {
 							});
 			})
 			.then((response) => {
-			  res.end();
+				res.end();
 			})
 			.catch((err) => {
-      console.error(err);
-      return Promise.reject(err);
-    });	
+				console.error(err);
+				return Promise.reject(err);
+			});	
 	})
   
 })
